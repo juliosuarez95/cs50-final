@@ -1,111 +1,103 @@
-Enemy = Object:extend()
+enemy = {}
+enemy.timer = 0
+enemy.timerLim = math.random(1,3)
+enemy.amount = math.random(1,3)
+enemy.side = math.random(1,4)
 
-
-
-function Enemy:new()
-    self.image = love.graphics.newImage('graphics/blueship.png')
-
-    -- table function??? 
-    enemy = {}
-
-    --[[
-        this will likely be changed from "timer" to "wave" when I find the 
-        proper way to implement the idea
-    ]]
-
-    self.timer = 0
-    self.timerLim = 2 --math.random(1, 3)
-    self.amount = 4 --math.random(2, 5)
-    self.side = math.random(1, 4)
-
-
-    self.x = 300
-    self.y = 20
-    self.speed = 300
-    self.width = self.image:getWidth()
-    self.height = self.image:getHeight()
-    self.xvel = 0
-    self.yvel = 0
-    self.friction = 10
-    self.health = 1
-
+function enemy.generate(dt)
+    enemy.timer = enemy.timer + dt
+    if enemy.timer > enemy.timerLim then
+        enemy.spawn(math.random(0, WINDOW_WIDTH), -50)
+        enemy.amount = math.random(1,3)
+        enemy.timerLim = math.random(3,5)
+        enemy.timer = 0
+    end
 end
 
-function Enemy:update(dt)
-    --self.x = self.x + self.speed * dt -- you commented this out to test stuff
-    local window_width = love.graphics.getWidth()
-    local window_height = love.graphics.getHeight()
 
-    --[[
-        this should assist with generating multiple enemies on the screen.
-        hopefully we'll be able to make them "fly in" from the top of the screen...
+-- enemy specifications
+enemy.image = love.graphics.newImage('graphics/blueship.png')
+enemy.width = enemy.image:getWidth()
+enemy.height = enemy.image:getHeight()
+enemy.speed = 1000
+enemy.friction = 10
+-- 
+-- 
 
-        for now, they spawn from all over the place
-    ]]
-    self.timer = self.timer + dt
-    if self.timer > self.timerLim then
-        --spawn the enemy
-        for i = 1,self.amount do
-            if self.side == 1 then -- LEFT
-                enemy:spawn(-self.height, window_height / 2 - (self.height / 2))
-            end
-            if self.side == 2 then -- TOP
-                enemy:spawn(window_width / 2 - (self.width / 2), -self.height)
-            end
-            if self.side == 3 then -- RIGHT
-                enemy:spawn(window_width, window_height / 2 - (self.height / 2))
-            end
-            if self.side == 4 then -- BOTTOM
-                enemy:spawn(window_width / 2 - (self.width / 2), window_height)
-            end
-            self.side = math.random(1, 4)
-        end
-        self.timerLim = 2 --math.random(1, 3)
-        self.timer = 0
-        self.amount = 4 --math.random(2, 5)
-    end
-    --[[
-        this whole setup here establishes the enemy tracking the player
-        currently the enemy follows the player pretty aggressively
-        we'll fix that later... 
-    ]]
+
+function enemy.spawn(x,y)
+    table.insert(enemy, {x = x, y = y, xvel = 0, yvel = 0, width = enemy.width, height = enemy.height})
+end
+-- 
+-- 
+function enemy.draw()
     for i,v in ipairs(enemy) do
-        self.x = self.x + self.xvel * dt
-        self.y = self.y + self.yvel * dt
-        self.xvel = self.xvel * (1 - math.min(dt * self.friction, 1))
-        self.yvel = self.yvel * (1 - math.min(dt * self.friction, 1))
+        love.graphics.draw(enemy.image, v.x, v.y)
     end
-
+end
+-- 
+-- 
+function enemy.physics(dt)
     for i,v in ipairs(enemy) do
-        -- TRACK X AXIS
-        if player.x + player.width / 2 < self.x + self.width / 2 then
-            if self.xvel > -self.speed then
-                self.xvel = self.xvel - self.speed * dt
-            end
-        elseif player.x + player.width / 2 > self.x + self.width / 2 then
-            if self.xvel < self.speed then
-                self.xvel = self.xvel + self.speed * dt
+        v.x = v.x + v.xvel * dt
+        v.y = v.y + v.yvel * dt
+        v.xvel = v.xvel * (1 - math.min(dt * enemy.friction, 1))
+        v.yvel = v.yvel * (1 - math.min(dt * enemy.friction, 1))
+    end
+end
+-- 
+-- 
+function enemy.AI(dt)
+    for i,v in ipairs(enemy) do
+        --X AXIS
+        if player.x + player.width / 2 < v.x + v.width / 2 then
+            if v.xvel > -enemy.speed then
+                v.xvel = v.xvel - enemy.speed * dt
             end
         end
-        -- TRACK THE Y AXIS
-        if player.y + player.height / 2 < self.y + self.height / 2 then
-            if self.yvel > -self.speed then
-                self.yvel = self.yvel - self.speed * dt
+        if player.x + player.width / 2 > v.x + v.width / 2 then
+            if v.xvel < enemy.speed then
+                v.xvel = v.xvel + enemy.speed * dt
             end
-        elseif player.y + player.height / 2 > self.y + self.height / 2 then
-            if self.yvel < self.speed then
-                self.yvel = self.yvel + self.speed * dt
+        end
+        --Y AXIS
+        if player.y + player.height /2 < v.y + v.height / 2 then
+            if v.yvel > -enemy.speed then
+                v.yvel = v.yvel - enemy.speed * dt
+            end
+        end
+        if player.y + player.height /2 > v.y + v.height / 2 then
+            if v.yvel < enemy.speed then
+                v.yvel = v.yvel + enemy.speed * dt
             end
         end
     end
 end
-
-function Enemy:spawn(x, y)
-    table.insert(enemy, {x = x, y = y, self.xvel, self.yvel, self.health})
-end
-
-function Enemy:draw()
+-- 
+-- 
+function enemy.bullet_collide()
     for i,v in ipairs(enemy) do
-        love.graphics.draw(self.image, self.x, self.y)
+        for ia,va in ipairs(bullet) do
+            if va.x + va.width > v.x and
+            va.x < v.x + v.width and
+            va.y + va.height > v.y and
+            va.y < v.y + v.height then
+                table.remove(enemy, i)
+                table.remove(bullet, ia)
+            end
+        end
     end
+end
+-- 
+-- PARENT FUNCTIONS
+function DRAW_ENEMY()
+    enemy.draw()
+end
+--
+-- 
+function UPDATE_ENEMY(dt)
+    enemy.physics(dt)
+    enemy.AI(dt)
+    enemy.generate(dt)
+    enemy.bullet_collide()
 end
