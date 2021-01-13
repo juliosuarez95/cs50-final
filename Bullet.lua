@@ -1,44 +1,36 @@
-Bullet = Object:extend()
-
-function Bullet:new(x, y)
-    self.image = love.graphics.newImage('graphics/laser.png')
-    self.x = x
-    self.y = y
-    self.speed = 700
-
-    self.width = self.image:getWidth()
-    self.height = self.image:getHeight()
+bullet = {}
+bullet.image = love.graphics.newImage('graphics/laser.png')
+bullet.width = bullet.image:getWidth()
+bullet.height = bullet.image:getHeight()
+bullet.speed = 500
+--
+--
+function bullet.spawn(x, y, dir)
+    table.insert(bullet, {x = x, y = y, dir = dir, width = enemy.width, height = enemy.height})
 end
-
-function Bullet:update(dt)
-    self.y = self.y - self.speed * dt
-
-    if self.y > love.graphics.getHeight() then
-        love.load()
+--
+--
+function bullet.draw()
+    for i,v in ipairs(bullet) do
+        love.graphics.draw(bullet.image, v.x, v.y)
     end
 end
-
-function Bullet:checkCollision(obj)
-    local self_left = self.x
-    local self_right = self.x + self.width
-    local self_top = self.y
-    local self_bottom = self.y + self.height
-
-    local obj_left = obj.x
-    local obj_right = obj.x +obj.width
-    local obj_top = obj.y
-    local obj_bottom = obj.y + obj.width
-
-    if self_right > obj_left and
-    self_left < obj_right and
-    self_bottom > obj_top and
-    self_top < obj_bottom then
-        self.dead = true
-
-        obj.speed = obj.speed + 50
+--
+--
+function bullet.move(dt)
+    for i,v in ipairs(bullet) do
+        if v.dir == 'up' then
+            v.y = v.y - bullet.speed * dt
+        end
     end
 end
-
-function Bullet:draw()
-    love.graphics.draw(self.image, self.x, self.y)
+--
+-- PARENT FUNCTIONS
+function DRAW_BULLET()
+    bullet.draw()
+end
+--
+--
+function UPDATE_BULLET(dt)
+    bullet.move(dt)
 end
